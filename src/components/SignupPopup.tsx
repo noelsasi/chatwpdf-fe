@@ -62,7 +62,7 @@ export default function SignupPopup({ isOpen, onClose }: SignupPopupProps) {
   return (
     <Dialog
       open={isOpen}
-      onOpenChange={(event, data) => !data.open && onClose()}
+      onOpenChange={(_event, data) => !data.open && onClose()}
     >
       <DialogSurface className={styles.dialogSurface}>
         <div className={styles.header}>
