@@ -99,7 +99,7 @@ export default function LandingPage() {
   const styles = useStyles();
 
   const testConnection = async () => {
-    const response = await api.get("/api/health/db");
+    const response = await api.get("/health");
     console.log(response.data);
   };
 

@@ -42,7 +42,7 @@ export default function AppLayout(): JSXElement {
   const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
-  const { chatHistory, getChatDocuments, setPdfInfo } = useChatStore();
+  const { chatHistory, setPdfInfo } = useChatStore();
 
   const handleChatClick = (chat: Chat) => {
     navigate(`/chat/${chat.id}`);
@@ -64,9 +64,9 @@ export default function AppLayout(): JSXElement {
     }
   }, [params.chatId, chatHistory, setPdfInfo]);
 
-  React.useEffect(() => {
-    getChatDocuments();
-  }, []);
+  // React.useEffect(() => {
+  //   getChatDocuments();
+  // }, []);
 
   return (
     <div className={styles.root}>
