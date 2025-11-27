@@ -15,10 +15,10 @@ function HandlerRoutes() {
 
 function App() {
   return (
-    <StackProvider app={stackApp}>
-      <StackTheme>
-        <FluentProvider theme={webLightTheme}>
-          <BrowserRouter>
+    <FluentProvider theme={webLightTheme}>
+      <BrowserRouter>
+        <StackProvider app={stackApp}>
+          <StackTheme>
             <Routes>
               <Route path="/handler/*" element={<HandlerRoutes />} />
               <Route path="/" element={<AppLayout />}>
@@ -27,10 +27,10 @@ function App() {
                 <Route path="/chat/:chatId" element={<PDFViewerPage />} />
               </Route>
             </Routes>
-          </BrowserRouter>
-        </FluentProvider>
-      </StackTheme>
-    </StackProvider>
+          </StackTheme>
+        </StackProvider>
+      </BrowserRouter>
+    </FluentProvider>
   );
 }
 
