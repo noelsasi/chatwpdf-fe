@@ -28,13 +28,4 @@ export default defineConfig({
     },
     include: ["pdfjs-dist"],
   },
-  server: {
-    proxy: {
-      "/api": {
-        target: "https://chatapi.immchurch.com",
-        // target: "http://localhost:8080",
-        changeOrigin: true,
-      },
-    },
-  },
 });
