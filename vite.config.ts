@@ -28,4 +28,12 @@ export default defineConfig({
     },
     include: ["pdfjs-dist"],
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+  },
 });
