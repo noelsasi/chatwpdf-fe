@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 
 export interface Chat extends PdfInfo {
   id: string;
+  status: string;
 }
 
 export interface PdfInfo {
@@ -92,6 +93,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             id: response.data.document.id,
             fileName: response.data.document.filename,
             fileUrl: response.data.document.fileUrl,
+            status: response.data.document.status,
           },
           ...get().chatHistory,
         ],
@@ -99,6 +101,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
           id: response.data.document.id,
           fileName: response.data.document.filename,
           fileUrl: response.data.fileUrl,
+          status: response.data.document.status,
         },
       });
       onSuccess(response.data.document.id);
@@ -117,10 +120,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             id: string;
             filename: string;
             fileUrl: string;
+            status: string;
           }): Chat => ({
             id: document.id,
             fileName: document.filename,
             fileUrl: document.fileUrl,
+            status: document.status,
           })
         ),
       });

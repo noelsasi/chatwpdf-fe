@@ -20,8 +20,9 @@ export const PDFViewer: React.FC = () => {
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [scale, setScale] = useState<number>(1.0);
   const [error, setError] = useState<string | null>(null);
-  const { pdfInfo } = useChatStore();
+  const { pdfInfo, selectedChat } = useChatStore();
   const { fileName, fileUrl } = pdfInfo;
+  console.log("selectedChat", selectedChat);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -47,7 +48,36 @@ export const PDFViewer: React.FC = () => {
   return (
     <div className={styles.pdfPanel}>
       <div className={styles.pdfHeader}>
-        <Text className={styles.pdfTitle}>{fileName || "Document.pdf"}</Text>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px",
+          }}
+        >
+          <Text className={styles.pdfTitle}>{fileName || "Document.pdf"}</Text>
+          <span
+            style={{
+              color: selectedChat?.status === "completed" ? "green" : "orange",
+              backgroundColor:
+                selectedChat?.status === "completed"
+                  ? "lightgreen"
+                  : "lightorange",
+              padding: "5px 10px",
+              borderRadius: "5px",
+              fontSize: "10px",
+              fontWeight: "bold",
+              textTransform: "uppercase",
+              letterSpacing: "1px",
+              fontFamily: "monospace",
+              width: "fit-content",
+            }}
+          >
+            {selectedChat?.status === "completed"
+              ? "Successfully Processed"
+              : "Processing..."}
+          </span>
+        </div>
         <div className={styles.pdfControls}>
           <Button
             appearance="subtle"

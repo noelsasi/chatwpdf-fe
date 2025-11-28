@@ -42,7 +42,8 @@ export default function AppLayout(): JSXElement {
   const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
 
-  const { chatHistory, setPdfInfo, getChatDocuments } = useChatStore();
+  const { chatHistory, setPdfInfo, getChatDocuments, setSelectedChat } =
+    useChatStore();
 
   const handleChatClick = (chat: Chat) => {
     navigate(`/chat/${chat.id}`);
@@ -50,19 +51,21 @@ export default function AppLayout(): JSXElement {
       fileName: chat.fileName,
       fileUrl: chat.fileUrl,
     });
+    setSelectedChat(chat);
   };
 
   React.useEffect(() => {
     if (params.chatId) {
       const fileInfo = chatHistory.find((chat) => chat.id === params.chatId);
       if (fileInfo) {
+        setSelectedChat(fileInfo);
         setPdfInfo({
           fileName: fileInfo.fileName,
           fileUrl: fileInfo.fileUrl,
         });
       }
     }
-  }, [params.chatId, chatHistory, setPdfInfo]);
+  }, [params.chatId, chatHistory, setPdfInfo, setSelectedChat]);
 
   React.useEffect(() => {
     getChatDocuments();
