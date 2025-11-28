@@ -8,6 +8,9 @@ import {
 } from "@fluentui/react-components";
 import { Send24Regular } from "@fluentui/react-icons";
 import { useChatPanelStyles } from "./chat_panel_styled";
+import { useUser } from "@stackframe/react";
+import { useParams } from "react-router-dom";
+import { useChatStore } from "../../store/chatStore";
 
 interface Message {
   id: string;
@@ -22,26 +25,27 @@ interface ChatPanelProps {
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
-  initialMessages = [
-    {
-      id: "1",
-      type: "ai",
-      content:
-        "Hey, friend!\n\nThis tracker helps you keep up with your habits every day of the month. It's super simple and neat so you can easily mark your progress and see your results at the end.\n\nŠikat kere te updejtov haj?",
-      timestamp: new Date(),
-    },
-  ],
+  initialMessages = [],
   suggestedQuestions = [
     "Summarize o tracker thaj hoj dikhav kako o tracker kerel kaj?",
     "So sikav te inportantno te trackinav habits regularly?",
     "Kako mešav te optimizirav o tracker te del me te ken?",
   ],
 }) => {
+  const user = useUser();
   const styles = useChatPanelStyles();
+  const params = useParams<{ chatId: string }>();
+  const documentId = params.chatId;
+  const { getOrCreateSession, querySession, getSessionMessages } =
+    useChatStore();
+
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const currentAiMessageRef = useRef<string>("");
+  const messageIdCounterRef = useRef<number>(0);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -49,10 +53,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputValue.trim();
-    if (!messageText) return;
+    if (!messageText || !documentId) return;
+
+    messageIdCounterRef.current += 1;
+    const userMessageId = `user-${messageIdCounterRef.current}`;
+    const aiMessageId = `ai-${messageIdCounterRef.current}`;
 
     const userMessage: Message = {
-      id: new Date().getTime().toString(),
+      id: userMessageId,
       type: "user",
       content: messageText,
       timestamp: new Date(),
@@ -61,18 +69,65 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
+    currentAiMessageRef.current = "";
 
-    // Simulate AI response
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "ai",
-        content: `Thank you for your question: "${messageText}". This is a simulated response. In a real application, this would be powered by an AI that analyzes the PDF content and provides relevant answers.`,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, aiMessage]);
+    // Create placeholder AI message for streaming
+    const aiMessage: Message = {
+      id: aiMessageId,
+      type: "ai",
+      content: "",
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+
+    try {
+      // Get or create session
+      const sessionId = await getOrCreateSession(documentId);
+
+      // Query session with streaming
+      await querySession(
+        sessionId,
+        messageText,
+        (chunk: string) => {
+          console.log("chunk", chunk);
+          // Update the AI message with streaming chunks
+          currentAiMessageRef.current += chunk;
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? { ...msg, content: currentAiMessageRef.current }
+                : msg
+            )
+          );
+        },
+        () => {
+          // Streaming complete
+          setIsLoading(false);
+        },
+        (error: Error) => {
+          // Handle error
+          console.error("Error querying session:", error);
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === aiMessageId
+                ? {
+                    ...msg,
+                    content:
+                      msg.content ||
+                      "Sorry, I encountered an error processing your question. Please try again.",
+                  }
+                : msg
+            )
+          );
+          setIsLoading(false);
+        }
+      );
+    } catch (error) {
+      console.error("Error sending message:", error);
       setIsLoading(false);
-    }, 1000);
+      // Remove the empty AI message if there was an error
+      setMessages((prev) => prev.filter((msg) => msg.id !== aiMessageId));
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -82,6 +137,44 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }
   };
 
+  // Load messages when documentId changes
+  useEffect(() => {
+    if (!documentId) return;
+
+    let cancelled = false;
+
+    const loadMessages = async () => {
+      setIsLoadingMessages(true);
+      try {
+        const sessionId = await getOrCreateSession(documentId);
+        if (cancelled) return;
+
+        const sessionMessages = await getSessionMessages(sessionId);
+        if (cancelled) return;
+
+        const formattedMessages: Message[] = sessionMessages.map((msg) => ({
+          id: msg.id,
+          type: msg.role === "assistant" ? "ai" : "user",
+          content: msg.content,
+          timestamp: msg.timestamp,
+        }));
+        setMessages(formattedMessages);
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingMessages(false);
+        }
+      }
+    };
+
+    loadMessages();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId, getOrCreateSession, getSessionMessages]);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -89,14 +182,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   return (
     <div className={styles.chatPanel}>
       <div className={styles.chatHeader}>
-        <Text className={styles.chatTitle}>Hey, friend!</Text>
+        <Text className={styles.chatTitle}>
+          Hey, {user?.displayName || "friend"}!
+        </Text>
         <Text className={styles.chatSubtitle}>
           Ask any question about this document
         </Text>
       </div>
 
       <div className={styles.chatMessages}>
-        {messages.length === 0 ? (
+        {isLoadingMessages ? (
+          <div className={styles.emptyState}>
+            <Spinner size="medium" />
+            <Text className={styles.emptyStateText}>Loading messages...</Text>
+          </div>
+        ) : messages.length === 0 ? (
           <div className={styles.emptyState}>
             <Text className={styles.emptyStateTitle}>
               Start chatting with your PDF
@@ -118,7 +218,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     className={styles.aiAvatar}
                   />
                 )}
-                <div className={styles.messageContent}>
+                <div
+                  className={
+                    message.type === "user"
+                      ? styles.userMessageContent
+                      : styles.messageContent
+                  }
+                >
                   <div
                     className={`${styles.messageBubble} ${
                       message.type === "user" ? styles.userMessage : ""

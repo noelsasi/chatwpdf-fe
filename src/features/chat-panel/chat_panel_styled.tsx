@@ -40,6 +40,11 @@ export const useChatPanelStyles = makeStyles({
   messageContent: {
     flex: 1,
   },
+  userMessageContent: {
+    flex: 1,
+    display: "flex",
+    justifyContent: "flex-end",
+  },
   messageBubble: {
     backgroundColor: "#f5f5f5",
     padding: "12px 16px",
@@ -47,10 +52,12 @@ export const useChatPanelStyles = makeStyles({
     fontSize: "14px",
     lineHeight: "1.5",
     color: "#333",
+    width: "fit-content",
   },
   userMessage: {
     backgroundColor: "#7C3AED",
     color: "white",
+    width: "fit-content",
   },
   aiAvatar: {
     backgroundColor: "#7C3AED",
@@ -111,4 +118,3 @@ export const useChatPanelStyles = makeStyles({
     lineHeight: "1.5",
   },
 });
-
